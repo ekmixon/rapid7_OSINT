@@ -141,20 +141,22 @@ def parse_json_zips():
     for INFILE in glob.glob("*.json.gz"):
         port_no = INFILE.replace('.json.gz', '') # this is needed to identify the different data sets, by port number.
         port_no = str(port_no.split('_')[-1]) # this is needed to identify the different data sets, by port number.
-        print("[+]debug, port:..." + str(port_no)) # this is needed to identify the different data sets, by port number.
+        print(f"[+]debug, port:...{port_no}")
         with gzip.open(INFILE) as f:
-            print('[+] Parsing JSON: {}'.format(INFILE))
+            print(f'[+] Parsing JSON: {INFILE}')
             for line in f:
-                tmp_lst = []
                 html_data = json.loads(line)
                 decoded_data = to_ascii(base64.b64decode(html_data["data"]))
-                tmp_lst.append(str(html_data["host"]) + ":" + str(port_no))
-                tmp_lst.append(get_title(decoded_data))
-                tmp_lst.append(get_server(decoded_data))
-                tmp_lst.append(get_content_type(decoded_data))
-                tmp_lst.append(get_content_encoding(decoded_data))
-                tmp_lst.append(get_x_powered_by(decoded_data))
-                tmp_lst.append(get_last_modified(decoded_data))
+                tmp_lst = [
+                    str(html_data["host"]) + ":" + port_no,
+                    get_title(decoded_data),
+                    get_server(decoded_data),
+                    get_content_type(decoded_data),
+                    get_content_encoding(decoded_data),
+                    get_x_powered_by(decoded_data),
+                    get_last_modified(decoded_data),
+                ]
+
                 write_to_csv(tmp_lst)
 
 def parse_json_headers():
@@ -162,20 +164,20 @@ def parse_json_headers():
     for INFILE in glob.glob("*.json.gz"):
         port_no = INFILE.replace('.json.gz', '') # this is needed to identify the different data sets, by port number. 
         port_no = str(port_no.split('_')[-1])   # this is needed to identify the different data sets, by port number.
-        print("[+]debug, port:..." + str(port_no)) # this is needed to identify the different data sets, by port number.
+        print(f"[+]debug, port:...{port_no}")
         with gzip.open(INFILE) as f:
-            print('[+] Parsing JSON: {}'.format(INFILE))
+            print(f'[+] Parsing JSON: {INFILE}')
             for line in f:
                 html_data = json.loads(line)
                 decoded_data = to_ascii(base64.b64decode(html_data["data"]))
-                
+
                 match_obj = header_section_re.search(decoded_data)
-                if match_obj == None:
+                if match_obj is None:
                     continue
-                
+
                 for header in match_obj.group('headers').split('\n'):
                     header_match = header_re.search(header)
-                    if header_match == None:
+                    if header_match is None:
                         continue
                     if header_match.group('name').strip() not in headers:
                         headers[header_match.group('name').strip()] = 0

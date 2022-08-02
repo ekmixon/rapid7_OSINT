@@ -168,25 +168,23 @@ def parse_json_zips():
         #######################################################################
         # this is needed to identify the different data sets, by port number.
         #######################################################################
-        print("[+] debug, port:..." + str(port_no))
+        print(f"[+] debug, port:...{port_no}")
         with gzip.open(INFILE) as f:
-            print('[+] Parsing JSON: {}'.format(INFILE))
+            print(f'[+] Parsing JSON: {INFILE}')
             for line in f:
-                tmp_lst = []
                 html_data = json.loads(line)
                 decoded_data = to_ascii(base64.b64decode(html_data["data"]))
                 server_header_name = get_server(decoded_data)
-                if server_header_name is not None:
-                    if not any(x in server_header_name for x in ignore_hosts): #remove common servers
-                        tmp_lst.append(str(html_data["host"]) + ":" + str(port_no))
-                        #tmp_lst.append(get_title(decoded_data)) #not in use, Apr 2020
-                        tmp_lst.append(server_header_name)
-                        server_vers.append(server_header_name)
-                        #tmp_lst.append(get_content_type(decoded_data)) #not in use, Apr 2020
-                        #tmp_lst.append(get_content_encoding(decoded_data)) #not in use, Apr 2020
-                        #tmp_lst.append(get_x_powered_by(decoded_data)) #not in use, Apr 2020
-                        #tmp_lst.append(get_last_modified(decoded_data)) #not in use, Apr 2020
-                        host_server.append(tmp_lst)
+                if server_header_name is not None and all(
+                    x not in server_header_name for x in ignore_hosts
+                ):
+                    tmp_lst = [str(html_data["host"]) + ":" + port_no, server_header_name]
+                    server_vers.append(server_header_name)
+                    #tmp_lst.append(get_content_type(decoded_data)) #not in use, Apr 2020
+                    #tmp_lst.append(get_content_encoding(decoded_data)) #not in use, Apr 2020
+                    #tmp_lst.append(get_x_powered_by(decoded_data)) #not in use, Apr 2020
+                    #tmp_lst.append(get_last_modified(decoded_data)) #not in use, Apr 2020
+                    host_server.append(tmp_lst)
                         #write_to_csv(tmp_lst) #not in use, Apr 2020
 
 
@@ -198,9 +196,9 @@ def parse_json_headers():
         # this is needed to identify the different data sets, by port number.
         port_no = str(port_no.split('_')[-1])
         # this is needed to identify the different data sets, by port number.
-        print("[+]debug, port:..." + str(port_no))
+        print(f"[+]debug, port:...{port_no}")
         with gzip.open(INFILE) as f:
-            print('[+] Parsing JSON: {}'.format(INFILE))
+            print(f'[+] Parsing JSON: {INFILE}')
             for line in f:
                 html_data = json.loads(line)
                 decoded_data = to_ascii(base64.b64decode(html_data["data"]))
@@ -221,15 +219,12 @@ def parse_json_headers():
 parse_json_zips()
 #debug,debug,debug,debug ----> counting the occurances of each type to fine tune. Helps create ignore_hosts above
 print(pd.Series(server_vers).value_counts().to_string())
-series_txt_file = open('value_counts_data.txt', 'w')
-series_txt_file.write(pd.Series(server_vers).value_counts().to_string())
-series_txt_file.close()
-
+with open('value_counts_data.txt', 'w') as series_txt_file:
+    series_txt_file.write(pd.Series(server_vers).value_counts().to_string())
 df = pd.DataFrame(host_server, columns = ['Host', 'Server'])
 df.sort_values(by=['Server'], ascending = True)
-series_txt_file = open('list_of_servers.txt', 'w')
-series_txt_file.write(df.to_string())
-series_txt_file.close()
+with open('list_of_servers.txt', 'w') as series_txt_file:
+    series_txt_file.write(df.to_string())
 ###############################################
 ###############################################
 ###############################################
@@ -239,10 +234,9 @@ OSINT_search_list = ["HP", "phone", "cisco", "DVR", "Index of", "Schneider", "In
 #################################################
 for each in OSINT_search_list:
     osint_search = df[df['Server'].str.contains(each)]
-    osint_search_results = open('osint_data.txt', 'a')
-    # print(osint_search['Host'].tolist())
-    osint_search_results.write(osint_search.to_string())
-    osint_search_results.close()
+    with open('osint_data.txt', 'a') as osint_search_results:
+        # print(osint_search['Host'].tolist())
+        osint_search_results.write(osint_search.to_string())
 
 
 

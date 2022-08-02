@@ -7,6 +7,7 @@ WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
+
 # Bitcoin Cash (BCH)   qpz32c4lg7x7lnk9jg6qg7s4uavdce89myax5v5nuk
 # Ether (ETH) -        0x843d3DEC2A4705BD4f45F674F641cE2D0022c9FB
 # Litecoin (LTC) -     Lfk5y4F7KZa9oRxpazETwjQnHszEPvqPvu
@@ -68,7 +69,7 @@ FULLTITLEFILE = "full_title_" + time.strftime("%Y%m%d-%H%M%S") + ".csv"
 
 title_data = []
 uniq_titles = []
-max_pages = int(30)
+max_pages = 30
 ua = UserAgent()
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # ua = UserAgent(verify_ssl=False, use_cache_server=False)
@@ -100,13 +101,16 @@ def whois_domain(domain_name):
                 datetime.datetime):
             current_date = datetime.datetime.now()
             res = diff_dates(current_date, creation_date)
-            RES.update({"creation_date": creation_date,
-                        "creation_date_diff": res,
-                        "emails": emails,
-                        "name": name,
-                        "registrar": registrar,
-                        "updated_date": updated_date,
-                        "expiration_date": expiration_date})
+            RES |= {
+                "creation_date": creation_date,
+                "creation_date_diff": res,
+                "emails": emails,
+                "name": name,
+                "registrar": registrar,
+                "updated_date": updated_date,
+                "expiration_date": expiration_date,
+            }
+
 
         elif isinstance(creation_date, list) or isinstance(expiration_date, list) or isinstance(updated_date, list):
             creation_date = w_res.creation_date[0]
@@ -115,19 +119,22 @@ def whois_domain(domain_name):
             current_date = datetime.datetime.now()
             res = diff_dates(current_date, creation_date)
 
-            RES.update({"creation_date": creation_date,
-                        "creation_date_diff": res,
-                        "emails": emails,
-                        "name": name,
-                        "registrar": registrar,
-                        "updated_date": updated_date,
-                        "expiration_date": expiration_date})
+            RES |= {
+                "creation_date": creation_date,
+                "creation_date_diff": res,
+                "emails": emails,
+                "name": name,
+                "registrar": registrar,
+                "updated_date": updated_date,
+                "expiration_date": expiration_date,
+            }
+
 
         time.sleep(2)
     except TypeError:
         pass
     except whois.parser.PywhoisError:
-        print(colored("No match for domain: {}.".format(domain_name), 'red'))
+        print(colored(f"No match for domain: {domain_name}.", 'red'))
     except AttributeError:
         pass
     except Exception as e:
@@ -195,7 +202,7 @@ web_server_ports = [80,
 def spider(base_url):
     auxiliaryList = []
     page_id = 1
-    print("[+]debug, checking..." + str(base_url))
+    print(f"[+]debug, checking...{str(base_url)}")
     while page_id <= max_pages:
         try:
             headers = {'User-Agent': ua.random}
@@ -205,15 +212,12 @@ def spider(base_url):
             for link in soup.find_all('a'):
                 if link.get('href') not in auxiliaryList:
                     auxiliaryList.append(base_url + link.get('href'))
-            page_id = page_id + 1
+            page_id += 1
         except Exception as exc:
             # print(exc) #debug, if one fails dont punish the rest!!
             continue
-            page_id = page_id + 1
-
     for each_link in auxiliaryList:
         try:
-            tmp_lst = []
             r = requests.get(
                 each_link,
                 verify=False,
@@ -221,10 +225,9 @@ def spider(base_url):
                 timeout=4)
             html = bs4.BeautifulSoup(r.text, features="html.parser")
             if "Index of " in str(html.title.text):
-                print("[+]debug, found! ... " + str(html.title.text))
-                print("[+]debug, found! ... " + str(each_link))
-                tmp_lst.append(str(html.title.text))
-                tmp_lst.append(str(each_link))
+                print(f"[+]debug, found! ... {str(html.title.text)}")
+                print(f"[+]debug, found! ... {str(each_link)}")
+                tmp_lst = [str(html.title.text), str(each_link)]
                 # write out to csv here, only the "Index of stuff"
                 with open(INDEXFILENAME, 'a+') as index_of_list:
                     wr = csv.writer(index_of_list, dialect='excel')
@@ -279,7 +282,7 @@ bypass_err = [
 ]
 
 for rapid7_file in glob.glob("*.json.gz"):
-    print("[+]debug, file..." + str(rapid7_file))
+    print(f"[+]debug, file...{str(rapid7_file)}")
 
     with gzip.open(rapid7_file) as f:
         for line in f:
@@ -287,62 +290,63 @@ for rapid7_file in glob.glob("*.json.gz"):
             html_data = json.loads(line)
 
             title = get_title(to_ascii(base64.b64decode(html_data["data"])))
-            if title is not None:
-                if title is not "":
-                    if any(x in title for x in bypass_err):
-                        # print("[-]debug, error found in string")
-                        pass
-                    else:  # clear
-                        try:
-                            try:
-                                host_id = socket.gethostbyaddr(
-                                    str(html_data["host"]))[0]
-                                tmp_lst.append(host_id)
-                            except Exception as exc:
-                                host_id = html_data["host"]
-                                tmp_lst.append(host_id)
-                            tmp_lst.append(html_data["path"])
-                            tmp_lst.append(title)
-                            try:
-                                whois_data = whois_domain(host_id)
-                                if whois_data:
-                                    for k, v in whois_data.items():
-                                        # if 'creation_date' in k:
-                                            # cd = whois_data.get('creation_date')
-                                        # if 'updated_date' in k:
-                                            # ud = whois_data.get('updated_date')
-                                        # if 'expiration_date' in k:
-                                            # ed = whois_data.get('expiration_date')
-                                        # if 'creation_date_diff' in k:
-                                            # cdd = whois_data.get('creation_date_diff')
-                                        if 'name' in k:
-                                            name = whois_data.get('name')
-                                            tmp_lst.append(name)
-                                        # if 'emails' in k:
-                                            # email = whois_data.get('emails')
-                                        # if 'registrar' in k:
-                                            # reg = whois_data.get('registrar')
-                            except Exception as exc:
-                                print(exc)
-                                pass
-                            uniq_titles.append(title)
-                            title_data.append(tmp_lst)
-                            # write out to csv file here (all data)
-                            with open(FULLTITLEFILE, 'a+') as full_title_scan:
-                                wr = csv.writer(
-                                    full_title_scan, dialect='excel')
-                                wr.writerow(tmp_lst)
-                            full_title_scan.close()
-                            print("adding,... " + str(tmp_lst))
-                            # OSINT Stuff here, Index of etc.
-                            thread_list = []
-                            if "Index of /" in str(title):
-                                for web_port in web_server_ports:  # check other web server ports just incase
-                                    thread = threading.Thread(target=spider, args=(
-                                        "http://" + str(host_id) + ":" + str(web_port),))
-                                    thread_list.append(thread)
-                                    thread.start()
-                        except Exception as exc:
-                            # print(exc) #debug, probs too many files open, fix
-                            # later or continue on
-                            pass
+            if (
+                title is not None
+                and title is not ""
+                and all(x not in title for x in bypass_err)
+            ):
+                try:
+                    try:
+                        host_id = socket.gethostbyaddr(
+                            str(html_data["host"]))[0]
+                        tmp_lst.append(host_id)
+                    except Exception as exc:
+                        host_id = html_data["host"]
+                        tmp_lst.append(host_id)
+                    tmp_lst.extend((html_data["path"], title))
+                    try:
+                        if whois_data := whois_domain(host_id):
+                            for k, v in whois_data.items():
+                                # if 'creation_date' in k:
+                                    # cd = whois_data.get('creation_date')
+                                # if 'updated_date' in k:
+                                    # ud = whois_data.get('updated_date')
+                                # if 'expiration_date' in k:
+                                    # ed = whois_data.get('expiration_date')
+                                # if 'creation_date_diff' in k:
+                                    # cdd = whois_data.get('creation_date_diff')
+                                if 'name' in k:
+                                    name = whois_data.get('name')
+                                    tmp_lst.append(name)
+                                # if 'emails' in k:
+                                    # email = whois_data.get('emails')
+                                # if 'registrar' in k:
+                                    # reg = whois_data.get('registrar')
+                    except Exception as exc:
+                        print(exc)
+                    uniq_titles.append(title)
+                    title_data.append(tmp_lst)
+                    # write out to csv file here (all data)
+                    with open(FULLTITLEFILE, 'a+') as full_title_scan:
+                        wr = csv.writer(
+                            full_title_scan, dialect='excel')
+                        wr.writerow(tmp_lst)
+                    full_title_scan.close()
+                    print(f"adding,... {tmp_lst}")
+                    # OSINT Stuff here, Index of etc.
+                    thread_list = []
+                    if "Index of /" in str(title):
+                        for web_port in web_server_ports:  # check other web server ports just incase
+                            thread = threading.Thread(
+                                target=spider,
+                                args=(
+                                    f"http://{str(host_id)}:{str(web_port)}",
+                                ),
+                            )
+
+                            thread_list.append(thread)
+                            thread.start()
+                except Exception as exc:
+                    # print(exc) #debug, probs too many files open, fix
+                    # later or continue on
+                    pass

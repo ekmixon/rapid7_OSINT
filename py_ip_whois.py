@@ -40,7 +40,7 @@ def check_whois(ip):
     obj = IPWhois(ip)
     result = obj.lookup_rdap(depth=1)
     # print (result) #debug
-    print("[+]debug : " + str(ip))
+    print(f"[+]debug : {str(ip)}")
     print("[+]debug : " + str(result['asn_description']))
     print("########")
     return str(result['network']['name'])

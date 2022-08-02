@@ -60,22 +60,22 @@ MBFACTOR = float(1 << 20)
 
 #thanks to:https://www.geeksforgeeks.org/python-sort-list-according-second-element-sublist/
 def Sort(sub_li): 
-    l = len(sub_li) 
-    for i in range(0, l): 
-        for j in range(0, l-i-1): 
+    l = len(sub_li)
+    for i in range(l): 
+        for j in range(l-i-1): 
             if (sub_li[j][1] > sub_li[j + 1][1]): 
                 tempo = sub_li[j] 
                 sub_li[j]= sub_li[j + 1] 
-                sub_li[j + 1]= tempo 
+                sub_li[j + 1]= tempo
     return sub_li 
 
 def extract(content):
-    links = []
     soup = bs4.BeautifulSoup(content)
-    for tag in soup.find_all():
-        if tag.name == 'a' and 'href' in tag.attrs:
-            links.append(tag.attrs['href'])
-    return links
+    return [
+        tag.attrs['href']
+        for tag in soup.find_all()
+        if tag.name == 'a' and 'href' in tag.attrs
+    ]
 
 
 content = requests.get(url, verify=False).text
@@ -83,8 +83,7 @@ links = extract(content)
 
 for each_link in links:
     if ext in each_link:
-        tmp_lst = []
-        tmp_lst.append(base_url + each_link)
+        tmp_lst = [base_url + each_link]
         response = requests.head(
             base_url + each_link,
             allow_redirects=True,

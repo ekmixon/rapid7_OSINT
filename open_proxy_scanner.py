@@ -192,29 +192,24 @@ def parse_json_zips():
         #######################################################################
         # this is needed to identify the different data sets, by port number.
         #######################################################################
-        print("[+] debug, port:..." + str(port_no))
+        print(f"[+] debug, port:...{port_no}")
         with gzip.open(INFILE) as f:
-            print('[+] Parsing JSON: {}'.format(INFILE))
+            print(f'[+] Parsing JSON: {INFILE}')
             for line in f:
-                tmp_lst = []
                 html_data = json.loads(line)
                 decoded_data = to_ascii(base64.b64decode(html_data["data"]))
                 server_header_name = get_server(decoded_data)
-                if server_header_name is not None:
-                    if not any(
-                            x in server_header_name for x in ignore_hosts):  # remove common servers
-                        tmp_lst.append(
-                            str(html_data["host"]) + ":" + str(port_no))
-                        # tmp_lst.append(get_title(decoded_data)) #not in use,
-                        # Apr 2020
-                        tmp_lst.append(server_header_name)
-                        server_vers.append(server_header_name)
-                        # tmp_lst.append(get_content_type(decoded_data)) #not in use, Apr 2020
-                        # tmp_lst.append(get_content_encoding(decoded_data)) #not in use, Apr 2020
-                        # tmp_lst.append(get_x_powered_by(decoded_data)) #not in use, Apr 2020
-                        # tmp_lst.append(get_last_modified(decoded_data)) #not
-                        # in use, Apr 2020
-                        host_server.append(tmp_lst)
+                if server_header_name is not None and all(
+                    x not in server_header_name for x in ignore_hosts
+                ):
+                    tmp_lst = [str(html_data["host"]) + ":" + port_no, server_header_name]
+                    server_vers.append(server_header_name)
+                    # tmp_lst.append(get_content_type(decoded_data)) #not in use, Apr 2020
+                    # tmp_lst.append(get_content_encoding(decoded_data)) #not in use, Apr 2020
+                    # tmp_lst.append(get_x_powered_by(decoded_data)) #not in use, Apr 2020
+                    # tmp_lst.append(get_last_modified(decoded_data)) #not
+                    # in use, Apr 2020
+                    host_server.append(tmp_lst)
                         # write_to_csv(tmp_lst) #not in use, Apr 2020
 
 
@@ -226,9 +221,9 @@ def parse_json_headers():
         # this is needed to identify the different data sets, by port number.
         port_no = str(port_no.split('_')[-1])
         # this is needed to identify the different data sets, by port number.
-        print("[+]debug, port:..." + str(port_no))
+        print(f"[+]debug, port:...{port_no}")
         with gzip.open(INFILE) as f:
-            print('[+] Parsing JSON: {}'.format(INFILE))
+            print(f'[+] Parsing JSON: {INFILE}')
             for line in f:
                 html_data = json.loads(line)
                 decoded_data = to_ascii(base64.b64decode(html_data["data"]))
@@ -256,9 +251,8 @@ parse_json_zips()
 
 df = pd.DataFrame(host_server, columns=['Host', 'Server'])
 df.sort_values(by=['Server'], ascending=True)
-series_txt_file = open('df_servers.txt', 'w')
-series_txt_file.write(df.to_string())
-series_txt_file.close()
+with open('df_servers.txt', 'w') as series_txt_file:
+    series_txt_file.write(df.to_string())
 ###############################################
 ###############################################
 ###############################################
@@ -274,7 +268,7 @@ def check_proxy(proxies_dicts):
             verify=False, timeout=0.5,proxies=proxies_dicts)
         # print(r.status_code)
         if int(r.status_code) == 200:
-            print("[+]debug, potential open proxy found:" + str(proxies_dicts))
+            print(f"[+]debug, potential open proxy found:{str(proxies_dicts)}")
             print(r.text)
         r.raise_for_status()
 
@@ -304,7 +298,7 @@ proxies_dicts = []
 
 for each_proxy in squid_list['Host'].tolist():
     #http_proxy = "http://" + str(each_proxy)
-    https_proxy = "https://" + str(each_proxy)
+    https_proxy = f"https://{str(each_proxy)}"
     proxyDict = {
         "http": http_proxy,
         "https": https_proxy,
